@@ -38,7 +38,7 @@ TA = Union[T, ARRAY]
 
 WEIGHTS_PATHS = {
     "coco": "coco_weights.pt",
-    "conceptual-captions": "conceptual_weights.pt",
+    # "conceptual-captions": "conceptual_weights.pt",
 }
 
 D = torch.device
@@ -48,12 +48,14 @@ CPU = torch.device("cpu")
 class Predictor(cog.Predictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
+        
         self.device = torch.device("cuda")
         self.clip_model, self.preprocess = clip.load(
             "ViT-B/32", device=self.device, jit=False
         )
-        self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-
+        print('-'*81)
+        local_model_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
+        self.tokenizer = GPT2Tokenizer.from_pretrained(local_model_path)
         self.models = {}
         self.prefix_length = 10
         for key, weights_path in WEIGHTS_PATHS.items():
@@ -67,7 +69,7 @@ class Predictor(cog.Predictor):
     @cog.input(
         "model",
         type=str,
-        options=WEIGHTS_PATHS.keys(),
+        # options=WEIGHTS_PATHS.keys(),
         default="coco",
         help="Model to use",
     )
@@ -135,7 +137,9 @@ class ClipCaptionModel(nn.Module):
     def __init__(self, prefix_length: int, prefix_size: int = 512):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.gpt = GPT2LMHeadModel.from_pretrained("gpt2")
+        local_model_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
+        self.gpt = GPT2LMHeadModel.from_pretrained(local_model_path)
+        print('+'*50)
         self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
         if prefix_length > 10:  # not enough memory
             self.clip_project = nn.Linear(
@@ -300,3 +304,22 @@ def generate2(
             generated_list.append(output_text)
 
     return generated_list[0]
+
+if __name__ == "__main__":
+    print(torch.cuda.is_available())
+    # 假设你有一个图片路径和模型名称
+    image_path = "Images/COCO_val2014_000000060623.jpg"
+    model_name = "coco"  # 或者你想使用的其他模型
+    use_beam_search = False  # 设置是否使用束搜索
+    print('start:')
+    # 实例化 Predictor 类
+    predictor = Predictor()
+    predictor.setup()  # 加载模型
+
+    # 调用预测方法
+    output = predictor.predict(image=image_path,model=model_name, use_beam_search=use_beam_search)
+
+    print('输出结果：')
+    # 打印输出结果
+    print(output)
+    

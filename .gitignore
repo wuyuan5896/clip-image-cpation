@@ -1,0 +1,4 @@
+data/coco
+*.zip
+*.pt
+gpt2_pretrained/*.bin
