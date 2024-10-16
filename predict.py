@@ -17,7 +17,7 @@ from transformers import (
 )
 import skimage.io as io
 import PIL.Image
-
+import time
 import cog
 
 # import torch
@@ -49,7 +49,8 @@ class Predictor(cog.Predictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
         
-        self.device = torch.device("cuda")
+        self.device = torch.device("cuda:{}".format('3') if torch.cuda.is_available() else "cpu")
+        print("my device is {}".format(torch.cuda.current_device()))
         self.clip_model, self.preprocess = clip.load(
             "ViT-B/32", device=self.device, jit=False
         )
@@ -78,8 +79,9 @@ class Predictor(cog.Predictor):
         default=False,
         help="Whether to apply beam search to generate the output text",
     )
-    def predict(self, image, model, use_beam_search):
+    def predict(self, image, model, use_beam_search,prompt=""):
         """Run a single prediction on the model"""
+        # print("my device is {}".format(torch.cuda.current_device()))
         image = io.imread(image)
         model = self.models[model]
         pil_image = PIL.Image.fromarray(image)
@@ -92,7 +94,7 @@ class Predictor(cog.Predictor):
         if use_beam_search:
             return generate_beam(model, self.tokenizer, embed=prefix_embed)[0]
         else:
-            return generate2(model, self.tokenizer, embed=prefix_embed)
+            return generate2(model, self.tokenizer, embed=prefix_embed, prompt=prompt)
 
 
 class MLP(nn.Module):
@@ -258,18 +260,28 @@ def generate2(
     stop_token_index = tokenizer.encode(stop_token)[0]
     filter_value = -float("Inf")
     device = next(model.parameters()).device
-    print('my device:',device)
+    # print('my device:',device)
     with torch.no_grad():
 
+        # for entry_idx in range(entry_count):
+        #     if embed is not None:
+        #         generated = embed
+        #     else:
+        #         if tokens is None:
+        #             tokens = torch.tensor(tokenizer.encode(prompt))
+        #             tokens = tokens.unsqueeze(0).to(device)
+
+        #         generated = model.gpt.transformer.wte(tokens)
+        step = 0
         for entry_idx in range(entry_count):
             if embed is not None:
                 generated = embed
-            else:
                 if tokens is None:
                     tokens = torch.tensor(tokenizer.encode(prompt))
                     tokens = tokens.unsqueeze(0).to(device)
 
-                generated = model.gpt.transformer.wte(tokens)
+                prompt_generated = model.gpt.transformer.wte(tokens)
+                generated = torch.cat((generated, prompt_generated), dim=1)
 
             for i in range(entry_length):
 
@@ -296,6 +308,9 @@ def generate2(
                     tokens = torch.cat((tokens, next_token), dim=1)
                 generated = torch.cat((generated, next_token_embed), dim=1)
                 if stop_token_index == next_token.item():
+                    step += 1
+                    break
+                if step == 2:
                     break
 
             output_list = list(tokens.squeeze().cpu().numpy())
@@ -306,19 +321,20 @@ def generate2(
 
 if __name__ == "__main__":
     print(torch.cuda.is_available())
-    # 假设你有一个图片路径和模型名称
-    image_path = "Images/CONCEPTUAL_01.jpg"
-    model_name = "coco"  # 或者你想使用的其他模型
-    use_beam_search = False  # 设置是否使用束搜索
-    print('start:')
+    image_path = "/server24/rsh/clip-image-cpation/Images/COCO_val2014_000000562207.jpg"
+    model_name = "coco" 
+    prompt = "what is the background of the image?"
+    use_beam_search = False 
     # 实例化 Predictor 类
     predictor = Predictor()
     predictor.setup()  # 加载模型
 
     # 调用预测方法
-    output = predictor.predict(image=image_path,model=model_name, use_beam_search=use_beam_search)
-
+    start = time.time()
+    output = predictor.predict(image=image_path,model=model_name, use_beam_search=use_beam_search,prompt=prompt)
+    gap_time = time.time() - start
     print('输出结果：')
     # 打印输出结果
     print(output)
+    print('耗时:{}'.format(gap_time))
     
