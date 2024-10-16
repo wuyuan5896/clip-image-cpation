@@ -321,9 +321,9 @@ def generate2(
 
 if __name__ == "__main__":
     print(torch.cuda.is_available())
-    image_path = "/server24/rsh/clip-image-cpation/Images/COCO_val2014_000000562207.jpg"
+    image_path = "./clip-image-cpation/Images/COCO_val2014_000000562207.jpg"
     model_name = "coco" 
-    prompt = "what is the background of the image?"
+    # prompt = "what is the background of the image?"
     use_beam_search = False 
     # 实例化 Predictor 类
     predictor = Predictor()
