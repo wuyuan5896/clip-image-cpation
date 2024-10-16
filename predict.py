@@ -37,7 +37,7 @@ TSN = Optional[TS]
 TA = Union[T, ARRAY]
 
 WEIGHTS_PATHS = {
-    "coco": "coco_weights.pt",
+    "coco": "data/coco_train_MLP_FT-GPT2/coco_prefix-009.pt",
     # "conceptual-captions": "conceptual_weights.pt",
 }
 
@@ -53,7 +53,6 @@ class Predictor(cog.Predictor):
         self.clip_model, self.preprocess = clip.load(
             "ViT-B/32", device=self.device, jit=False
         )
-        print('-'*81)
         local_model_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
         self.tokenizer = GPT2Tokenizer.from_pretrained(local_model_path)
         self.models = {}
@@ -308,7 +307,7 @@ def generate2(
 if __name__ == "__main__":
     print(torch.cuda.is_available())
     # 假设你有一个图片路径和模型名称
-    image_path = "Images/COCO_val2014_000000060623.jpg"
+    image_path = "Images/CONCEPTUAL_01.jpg"
     model_name = "coco"  # 或者你想使用的其他模型
     use_beam_search = False  # 设置是否使用束搜索
     print('start:')
