@@ -258,7 +258,7 @@ def generate2(
     stop_token_index = tokenizer.encode(stop_token)[0]
     filter_value = -float("Inf")
     device = next(model.parameters()).device
-
+    print('my device:',device)
     with torch.no_grad():
 
         for entry_idx in range(entry_count):
