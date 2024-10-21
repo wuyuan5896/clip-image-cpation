@@ -4,6 +4,8 @@ from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, AdamW, get_linear_schedule_with_warmup
+from transformers import AutoModelForCausalLM,AutoTokenizer
+# from transformers import LlamaTokenizer, LlamaForCausalLM
 from tqdm import tqdm
 import os
 import pickle
@@ -12,6 +14,8 @@ import argparse
 import json
 from typing import Tuple, Optional, Union
 # os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+
+from torch.utils.tensorboard import SummaryWriter
 
 class MappingType(Enum):
     MLP = 'mlp'
@@ -49,8 +53,13 @@ class ClipCocoDataset(Dataset):
     def __init__(self, data_path: str,  prefix_length: int, gpt2_type: str = "gpt2",
                  normalize_prefix=False):
         # self.tokenizer = GPT2Tokenizer.from_pretrained(gpt2_type)
-        local_model_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
-        self.tokenizer = GPT2Tokenizer.from_pretrained(local_model_path)
+        # local_model_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
+        # self.tokenizer = GPT2Tokenizer.from_pretrained(local_model_path)
+
+        local_model_path = "/server24/rsh/clip-image-cpation/llama-3.2-1B"
+        self.tokenizer = AutoTokenizer.from_pretrained(local_model_path)
+
+        
         self.prefix_length = prefix_length
         self.normalize_prefix = normalize_prefix
         with open(data_path, 'rb') as f:
@@ -230,12 +239,14 @@ class ClipCaptionModel(nn.Module):
 
     def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
-        embedding_text = self.gpt.transformer.wte(tokens)   #这是什么意思？
+        # embedding_text = self.gpt.transformer.wte(tokens)   #这是什么意思？
+        embedding_text = self.gpt.model.embed_tokens(tokens)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
+        self.gpt.eval()
         out = self.gpt(inputs_embeds=embedding_cat, labels=labels, attention_mask=mask)
         return out
 
@@ -244,11 +255,15 @@ class ClipCaptionModel(nn.Module):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
         # self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
-        # print('start to loade the pretrained gpt2 model....')
-        local_model_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
-        self.gpt = GPT2LMHeadModel.from_pretrained(local_model_path)
-        # print('load the pretrained gpt2 model successfully!')
-        self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
+        # print('start to loade the pretrained llama model....')
+        local_model_path = "/server24/rsh/clip-image-cpation/llama-3.2-1B"
+        self.gpt = AutoModelForCausalLM.from_pretrained(local_model_path)
+        self.gpt_embedding_size = self.gpt.model.embed_tokens.embedding_dim
+        # local_model_gpt2_path = "/server24/rsh/clip-image-cpation/gpt2_pretrained"
+        # self.gpt2 = GPT2LMHeadModel.from_pretrained(local_model_gpt2_path)
+        # gpt_embedding_size = self.gpt2.transformer.wte.weight.shape[1]
+        # print(f'gpt embedding size is {gpt_embedding_size}')
+        
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.gpt_embedding_size * prefix_length) // 2,
                                      self.gpt_embedding_size * prefix_length))
@@ -260,6 +275,7 @@ class ClipCaptionModel(nn.Module):
 class ClipCaptionPrefix(ClipCaptionModel):
 
     def parameters(self, recurse: bool = True):
+        # print('this is clip_project parameters!')
         return self.clip_project.parameters()
 
     def train(self, mode: bool = True):
@@ -310,6 +326,11 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     model = model.to(device)
+    # 冻结 Llama 模型的参数
+    for param in model.gpt.parameters():
+        param.requires_grad = False
+    # 初始化SummaryWriter
+    writer = SummaryWriter('./runs/experiment_name')
     model.train()
     optimizer = AdamW(model.parameters(), lr=lr)
     train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -339,6 +360,8 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
                     os.path.join(output_dir, f"{output_prefix}_latest.pt"),
                 )
         progress.close()
+        writer.add_scalar('Loss/train', loss.item(), epoch)
+        writer.add_scalar('Learning Rate', scheduler.get_last_lr()[0], epoch)
         if epoch % args.save_every == 0 or epoch == epochs - 1:
             torch.save(
                 model.state_dict(),
@@ -362,7 +385,7 @@ def main():
     parser.add_argument('--num_layers', type=int, default=8)
     parser.add_argument('--is_rn', dest='is_rn', action='store_true')
     parser.add_argument('--normalize_prefix', dest='normalize_prefix', action='store_true')
-    parser.add_argument('--cuda_device', type=int, default=3)
+    parser.add_argument('--cuda_device', type=int, default=4)
     args = parser.parse_args()
     prefix_length = args.prefix_length
     
@@ -373,6 +396,7 @@ def main():
         model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim,
                                   num_layers=args.num_layers, mapping_type=args.mapping_type)
         print("Train only prefix")
+        # assert 1==0
     else:
         model = ClipCaptionModel(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim,
                                   num_layers=args.num_layers, mapping_type=args.mapping_type)

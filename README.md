@@ -1,7 +1,9 @@
 # CLIP prefix captioning.
 
+```
 `<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg">``</a>`
 Inference Notebook: `<a href="https://colab.research.google.com/drive/1tuoAC5F4sC7qid56Z0ap-stR3rwdk0ZV?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=20>``</a>`
+```
 
 ## Official implementation for the paper [&#34;ClipCap: CLIP Prefix for Image Captioning&#34;](https://arxiv.org/abs/2111.09734)
 
@@ -144,7 +146,7 @@ python parse_coco.py --clip_model_type RN50x4
 ```
 
 ```
-python train.py --only_prefix --data ./data/coco/oscar_split_RN50x4_train.pkl --out_dir ./coco_train/ --mapping_type transformer  --num_layres 8 --prefix_length 40 --prefix_length_clip 40 --is_rn
+python train.py --only_prefix --data ./data/coco/oscar_split_RN50x4_train.pkl --out_dir ./coco_train/ --mapping_type transformer  --num_layers 8 --prefix_length 40 --prefix_length_clip 40 --is_rn
 ```
 
 ## Conceptual training

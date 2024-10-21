@@ -3,3 +3,7 @@ data/coco
 *.pt
 gpt2_pretrained/*.bin
 __pycache__
+llama-3.2-1B/*.json
+llama-3.2-1B/*.txt
+llama-3.2-1B/*.md
+llama-3.2-1B/*.safetensors
