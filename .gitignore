@@ -7,3 +7,12 @@ llama-3.2-1B/*.json
 llama-3.2-1B/*.txt
 llama-3.2-1B/*.md
 llama-3.2-1B/*.safetensors
+
+# Video codec temporary files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.flv
+*.wmv
+/tmp/
