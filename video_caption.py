@@ -45,18 +45,26 @@ class VideoCLIPEncoder:
             编码后的特征张量 (num_frames, feature_dim)
         """
         features = []
+        batch_size = 8  # Process frames in batches for efficiency
         
         with torch.no_grad():
-            for frame in frames:
-                # 转换为PIL Image
-                pil_image = PIL.Image.fromarray(frame)
-                # 预处理
-                image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
-                # 编码
-                feature = self.clip_model.encode_image(image)
-                features.append(feature)
+            for i in range(0, len(frames), batch_size):
+                batch_frames = frames[i:i + batch_size]
+                batch_images = []
+                
+                for frame in batch_frames:
+                    # 转换为PIL Image
+                    pil_image = PIL.Image.fromarray(frame)
+                    # 预处理
+                    image = self.preprocess(pil_image)
+                    batch_images.append(image)
+                
+                # Stack batch and encode
+                batch_tensor = torch.stack(batch_images).to(self.device)
+                batch_features = self.clip_model.encode_image(batch_tensor)
+                features.append(batch_features)
         
-        # 堆叠所有帧的特征
+        # 拼接所有批次的特征
         features = torch.cat(features, dim=0)
         return features
     
@@ -156,7 +164,7 @@ class VideoCaptionGenerator:
         """
         Args:
             model_path: 预训练模型路径
-            model_type: 语言模型类型 ("gpt2" or "llama")
+            model_type: 语言模型类型 (currently only "gpt2" is supported)
             clip_model_type: CLIP模型类型
             prefix_length: 前缀长度
             device: 计算设备
@@ -173,7 +181,7 @@ class VideoCaptionGenerator:
             self.language_model = GPT2LMHeadModel.from_pretrained("gpt2")
             gpt_dim = self.language_model.transformer.wte.weight.shape[1]
         else:
-            raise ValueError(f"Model type {model_type} not supported in this example")
+            raise ValueError(f"Model type {model_type} not supported. Currently only 'gpt2' is supported.")
         
         self.language_model = self.language_model.to(self.device)
         self.language_model.eval()
@@ -316,13 +324,16 @@ class VideoCaptionGenerator:
 def demo_video_captioning():
     """演示视频字幕生成"""
     from video_utils import create_sample_video
+    import tempfile
+    import os
     
     print("=" * 60)
     print("视频字幕生成演示 / Video Captioning Demo")
     print("=" * 60)
     
     # 创建测试视频
-    test_video = "/tmp/demo_video.mp4"
+    temp_dir = tempfile.gettempdir()
+    test_video = os.path.join(temp_dir, "demo_video.mp4")
     print(f"\n1. Creating sample video at {test_video}...")
     create_sample_video(test_video, duration=3, fps=10)
     

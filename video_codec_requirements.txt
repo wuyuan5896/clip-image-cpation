@@ -11,9 +11,11 @@ Pillow>=8.0.0
 # Transformers and NLP
 transformers>=4.10.0
 
-# CLIP
-# Install with: pip install git+https://github.com/openai/CLIP.git
-# clip @ git+https://github.com/openai/CLIP.git
+# CLIP - Install separately with:
+# pip install git+https://github.com/openai/CLIP.git
 
 # Utilities
 tqdm>=4.60.0
+
+# Note: CLIP must be installed separately using the command above
+# This is because it's a git-based dependency and may require special handling

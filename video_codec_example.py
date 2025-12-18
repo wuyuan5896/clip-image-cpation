@@ -18,6 +18,7 @@ import sys
 import argparse
 import torch
 import numpy as np
+import tempfile
 from pathlib import Path
 
 # 导入自定义模块
@@ -35,7 +36,8 @@ def example_1_video_frame_extraction():
     print("=" * 70)
     
     # 创建测试视频
-    test_video = "/tmp/test_extraction.mp4"
+    temp_dir = tempfile.gettempdir()
+    test_video = os.path.join(temp_dir, "test_extraction.mp4")
     print(f"\n创建测试视频... / Creating test video...")
     create_sample_video(test_video, duration=5, fps=30)
     
@@ -176,7 +178,12 @@ def example_5_video_reconstruction(frames, output_path):
     
     processor = VideoProcessor()
     
-    output_file = output_path or "/tmp/reconstructed_video.mp4"
+    if output_path is None:
+        temp_dir = tempfile.gettempdir()
+        output_file = os.path.join(temp_dir, "reconstructed_video.mp4")
+    else:
+        output_file = output_path
+    
     print(f"\n重建视频到 / Reconstructing video to: {output_file}")
     
     processor.save_frames_as_video(
@@ -214,7 +221,8 @@ def run_all_examples():
     caption = example_4_video_caption_generation(video_path)
     
     # 示例5: 视频重建
-    reconstructed_video = example_5_video_reconstruction(frames[:10], "/tmp/reconstructed.mp4")
+    temp_dir = tempfile.gettempdir()
+    reconstructed_video = example_5_video_reconstruction(frames[:10], os.path.join(temp_dir, "reconstructed.mp4"))
     
     print("\n" + "=" * 70)
     print("所有示例完成! / All examples completed!")

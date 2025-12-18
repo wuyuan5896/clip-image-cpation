@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 from typing import List, Tuple, Optional
 import os
+import tempfile
 from pathlib import Path
 
 
@@ -236,7 +237,8 @@ if __name__ == "__main__":
     print("Video utilities module loaded successfully!")
     
     # 创建测试视频
-    test_video_path = "/tmp/test_video.mp4"
+    temp_dir = tempfile.gettempdir()
+    test_video_path = os.path.join(temp_dir, "test_video.mp4")
     create_sample_video(test_video_path, duration=3, fps=10)
     
     # 测试视频处理
