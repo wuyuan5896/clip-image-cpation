@@ -7,6 +7,27 @@ Inference Notebook: `<a href="https://colab.research.google.com/drive/1tuoAC5F4s
 
 ## Official implementation for the paper [&#34;ClipCap: CLIP Prefix for Image Captioning&#34;](https://arxiv.org/abs/2111.09734)
 
+## 🎥 New: Video Codec & Captioning (生成式视频编解码)
+
+**[📖 Video Codec Documentation](VIDEO_CODEC_README.md)** | **[🚀 Quick Start](video_codec_example.py)**
+
+This repository now includes a complete video processing and captioning system based on CLIP and language models:
+
+- ✅ **Video Frame Extraction** - Extract frames from videos with multiple sampling strategies
+- ✅ **Frame Encoding/Decoding** - JPEG compression for video frames
+- ✅ **CLIP Feature Extraction** - Encode video frames using CLIP with temporal aggregation
+- ✅ **Video Caption Generation** - Generate descriptions for videos using CLIP+GPT-2/LLaMA
+
+```bash
+# Quick start with all examples
+python video_codec_example.py --all
+
+# Generate caption for your video
+python video_codec_example.py --video /path/to/video.mp4 --example 4
+```
+
+See [VIDEO_CODEC_README.md](VIDEO_CODEC_README.md) for detailed documentation and examples.
+
 ## Description
 
 Image captioning is a complicated task, where usually a pretrained detection network is used, requires additional supervision in the form of object annotation. We present a new approach that does not requires additional information (i.e. requires only images and captions), thus can be applied to any data. In addition, our model's training time is much faster than similar methods while achieving comparable to state-of-the-art results, even for the Conceptual Captions dataset contains over 3M images.
