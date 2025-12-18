@@ -1,6 +1,6 @@
 """
-Video Captioning with CLIP and GPT-2/LLaMA
-基于CLIP和生成模型的视频字幕生成
+Video Captioning with CLIP and GPT-2
+基于CLIP和GPT-2的视频字幕生成
 """
 
 import torch

@@ -16,7 +16,7 @@ This repository now includes a complete video processing and captioning system b
 - ✅ **Video Frame Extraction** - Extract frames from videos with multiple sampling strategies
 - ✅ **Frame Encoding/Decoding** - JPEG compression for video frames
 - ✅ **CLIP Feature Extraction** - Encode video frames using CLIP with temporal aggregation
-- ✅ **Video Caption Generation** - Generate descriptions for videos using CLIP+GPT-2/LLaMA
+- ✅ **Video Caption Generation** - Generate descriptions for videos using CLIP+GPT-2
 
 ```bash
 # Quick start with all examples
