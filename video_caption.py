@@ -8,7 +8,7 @@ import torch.nn as nn
 import numpy as np
 import clip
 from typing import List, Optional, Tuple
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, AutoModelForCausalLM, AutoTokenizer
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import PIL.Image
 from video_utils import VideoProcessor
 
@@ -181,7 +181,11 @@ class VideoCaptionGenerator:
             self.language_model = GPT2LMHeadModel.from_pretrained("gpt2")
             gpt_dim = self.language_model.transformer.wte.weight.shape[1]
         else:
-            raise ValueError(f"Model type {model_type} not supported. Currently only 'gpt2' is supported.")
+            raise ValueError(
+                f"Model type '{model_type}' is not supported. "
+                f"Currently only 'gpt2' is supported. "
+                f"To add support for other models, extend the VideoCaptionGenerator class."
+            )
         
         self.language_model = self.language_model.to(self.device)
         self.language_model.eval()
